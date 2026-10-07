@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Methodology and Architecture | FakeGuard{% endblock %}
+{% block meta_desc %}Technical architecture, natural language classification methodology, and retrieval mechanics of the FakeGuard platform.{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-breadcrumb">
+      <a href="{{ url_for('home') }}">Home</a> &rsaquo; <span>Methodology</span>
+    </div>
+    <h1 class="page-title">Platform Architecture & Methodology</h1>
+    <p class="page-subtitle">A technical overview of natural language feature extraction, machine learning classification, and semantic retrieval engines.</p>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 2rem; padding-bottom: 3.5rem;">
+
+  <!-- SECTION: OVERVIEW -->
+  <div class="about-card">
+    <h2>1. System Overview</h2>
+    <p>
+      <strong>FakeGuard</strong> is an automated news verification and source corroboration platform. The platform is designed to provide rapid credibility assessments on news headlines and body text by combining statistical natural language processing, supervised classification models, and vector space similarity search.
+    </p>
+    <p>
+      Unlike subjective manual review, FakeGuard examines lexical distributions, stylometric patterns, sensationalized terminology, and historical narrative matches against an indexed reference corpus of over 1,500 verified articles.
+    </p>
+    <div class="info-quote">
+      "FakeGuard operates as an analytical decision-support system. It computes probabilistic credibility metrics based on learned textual features and should be paired with human editorial judgment."
+    </div>
+  </div>
+
+  <!-- SECTION: NLP PIPELINE -->
+  <div class="about-card">
+    <h2>2. Linguistic Preprocessing Pipeline</h2>
+    <p>
+      Raw text submitted to the platform undergoes a strict multi-stage normalization pipeline to extract clean semantic signals before vectorization:
+    </p>
+    <div class="pipeline-horizontal-grid">
+      <div class="p-step">
+        <span class="p-num">01</span>
+        <h4>Normalization</h4>
+        <p>Lowercasing, stripping of URLs, HTML tags, punctuation, and non-alphanumeric noise.</p>
+      </div>
+      <div class="p-step">
+        <span class="p-num">02</span>
+        <h4>Tokenization</h4>
+        <p>Granular word segmentation using NLTK statistical tokenizers.</p>
+      </div>
+      <div class="p-step">
+        <span class="p-num">03</span>
+        <h4>Stop-Word Filtering</h4>
+        <p>Removal of high-frequency grammatical functional words that carry low topical variance.</p>
+      </div>
+      <div class="p-step">
+        <span class="p-num">04</span>
+        <h4>Lemmatization</h4>
+        <p>Morphological reduction via WordNet lemmatizer to reduce inflected forms to root lexemes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: FEATURE VECTORIZATION & MODELS -->
+  <div class="about-card">
+    <h2>3. Feature Extraction & Machine Learning Classifiers</h2>
+    <p>
+      Text is converted into high-dimensional vector representations using <strong>Term Frequency &ndash; Inverse Document Frequency (TF-IDF)</strong> with sublinear term scaling and unigram + bigram n-gram combinations (yielding a feature space of over 28,000 dimensions).
+    </p>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-label">Linear Support Vector Machine (LinearSVC)</div>
+        <div class="tech-desc">Max-margin hyperplane classifier optimized for sparse high-dimensional text vectors. Calibrated via Platt scaling (CalibratedClassifierCV) for reliable probability scoring.</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-label">Multinomial Naive Bayes</div>
+        <div class="tech-desc">Probabilistic generative classifier using laplace-smoothed multinomial distributions across word frequencies.</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-label">Logistic Regression (L2 Regularized)</div>
+        <div class="tech-desc">Discriminative linear model fitted via L-BFGS solver to minimize cross-entropy loss across corpus token weights.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: RETRIEVAL ENGINE -->
+  <div class="about-card">
+    <h2>4. Semantic Retrieval & Source Corroboration</h2>
+    <p>
+      When an article is analyzed, FakeGuard does not merely return a binary classification label. It projects the normalized query into the fitted <strong>Vector Space Model</strong> and computes <strong>Cosine Similarity</strong> against all 1,595 pre-indexed corpus documents:
+    </p>
+    <div class="formula-box">
+      <code>Cosine Similarity (Q, D) = (Q &bull; D) / (||Q|| &times; ||D||)</code>
+    </div>
+    <p>
+      The platform ranks and returns the top 5 most semantically analogous reports, allowing investigators to verify what established news organizations reported on the same topic and detect conflicting claims.
+    </p>
+  </div>
+
+  <!-- SECTION: DATASET PROVENANCE -->
+  <div class="about-card">
+    <h2>5. Training Corpus & Benchmark Provenance</h2>
+    <p>
+      The production model is trained and evaluated on real-world articles curated from the peer-reviewed <strong>FakeNewsNet benchmark dataset</strong> (comprising validated investigative journalism from PolitiFact and fact-checked entertainment reporting from GossipCop).
+    </p>
+    <p>
+      The dataset represents diverse narrative styles, political discourse, scientific announcements, and viral rumors, stratified across an 80/20 train/test partition to maintain robust cross-topic generalization.
+    </p>
+  </div>
+
+  <!-- SECTION: GOVERNANCE & PRIVACY -->
+  <div class="about-card">
+    <h2>6. Privacy, Security & Operational Governance</h2>
+    <ul class="methodology-list">
+      <li><strong>Ephemeral Processing:</strong> Text submitted for verification is analyzed in-memory and is not stored in persistent logging databases.</li>
+      <li><strong>Deterministic Scoring:</strong> All model weights, vocabulary dictionaries, and TF-IDF parameters are locked and reproducible.</li>
+      <li><strong>Decision Transparency:</strong> Detailed token contributions and probability confidence distributions are surfaced on every evaluation report.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

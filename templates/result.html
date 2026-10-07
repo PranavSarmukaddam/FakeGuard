@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Report | FakeGuard{% endblock %}
+{% block meta_desc %}Authenticity prediction, linguistic probability calibration, and corroborative reference reports.{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-breadcrumb">
+      <a href="{{ url_for('home') }}">Home</a> &rsaquo;
+      <a href="{{ url_for('detect') }}">Verify News</a> &rsaquo;
+      <span>Verification Report</span>
+    </div>
+    <h1 class="page-title">Content Analysis &amp; Source Corroboration</h1>
+    <p class="page-subtitle">Algorithmic credibility assessment, calibrated probability distribution, and ranked semantic matches.</p>
+  </div>
+</div>
+
+<div class="container results-section">
+
+  <!-- INPUT SUMMARY -->
+  <div class="result-input-box">
+    <div class="result-input-label">Submitted Query Text</div>
+    {% if headline %}
+    <div class="input-headline-text">"{{ headline }}"</div>
+    {% endif %}
+    {% if body %}
+    <div class="input-body-preview">{{ body[:350] }}{% if body|length > 350 %}...{% endif %}</div>
+    {% endif %}
+  </div>
+
+  <!-- VERDICT CARD -->
+  <div class="verdict-card">
+    <div class="verdict-header {% if prediction.label == 'FAKE' %}verdict-header-fake{% else %}verdict-header-real{% endif %}">
+      <div class="verdict-icon-box">
+        {% if prediction.label == 'FAKE' %}
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        {% else %}
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        {% endif %}
+      </div>
+      <div>
+        <div class="verdict-label-text">
+          {% if prediction.label == 'FAKE' %}UNVERIFIED / DECEPTIVE SIGNATURES DETECTED{% else %}VERIFIED JOURNALISTIC PATTERNS DETECTED{% endif %}
+        </div>
+        <div class="verdict-sub">
+          {% if prediction.label == 'FAKE' %}
+            The linguistic structure and terminology align strongly with patterns identified in fabricated or unverified claims.
+          {% else %}
+            The lexical consistency and stylistic tone correspond with verified news standards in the reference corpus.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict-body">
+      <div class="confidence-section">
+        <div class="conf-row">
+          <span class="conf-name">Unverified / Deceptive Index</span>
+          <div class="conf-bar-track">
+            <div class="conf-bar conf-bar-fake" style="width: {{ prediction.fake_prob }}%"></div>
+          </div>
+          <span class="conf-pct">{{ prediction.fake_prob }}%</span>
+        </div>
+        <div class="conf-row">
+          <span class="conf-name">Authentic / Verified Index</span>
+          <div class="conf-bar-track">
+            <div class="conf-bar conf-bar-real" style="width: {{ prediction.real_prob }}%"></div>
+          </div>
+          <span class="conf-pct">{{ prediction.real_prob }}%</span>
+        </div>
+      </div>
+
+      <div class="verdict-disclaimer">
+        Notice: Automated machine learning predictions evaluate statistical language distribution against peer-reviewed training corpora. This score represents an evidentiary heuristic rather than legal fact-checking.
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMILAR ARTICLES CORROBORATION -->
+  <div style="margin-bottom: 2.5rem;">
+    <div class="result-section-header-row">
+      <div>
+        <div class="result-section-heading">Corroborative Reference Reports</div>
+        <div class="result-section-sub">
+          Top 5 most semantically proximate documents retrieved from the 1,500+ indexed corpus using high-dimensional Cosine Similarity.
+        </div>
+      </div>
+      <span class="retrieval-algo-tag">Vector Space Search</span>
+    </div>
+
+    {% if similar %}
+      <div class="similar-grid">
+        {% for art in similar %}
+        <div class="similar-card {% if art.label == 'FAKE' %}sim-fake{% else %}sim-real{% endif %}">
+          <div class="sim-card-top">
+            <span class="sim-rank-tag">Match #{{ art.rank }}</span>
+            <span class="sim-label-tag {% if art.label == 'FAKE' %}sim-label-fake{% else %}sim-label-real{% endif %}">
+              {{ art.label }}
+            </span>
+          </div>
+          <h3 class="sim-title">{{ art.title }}</h3>
+          <p class="sim-snippet">{{ art.snippet }}</p>
+          <div class="sim-score-row">
+            <span class="sim-score-label">Semantic Match:</span>
+            <span class="sim-score-val">{{ art.similarity }}%</span>
+            <div class="sim-bar-track">
+              <div class="sim-bar" style="width: {{ art.similarity }}%"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="no-similar">
+        <h3>No Close Corpus Matches Found</h3>
+        <p>
+          No indexed reference documents reached the semantic proximity threshold for this query.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PREPROCESSED NORMALIZED TOKENS (COLLAPSIBLE / CLEAN) -->
+  {% if prediction.processed %}
+  <div class="eval-card" style="margin-bottom: 2.5rem;">
+    <div class="eval-card-header">
+      <div class="eval-card-title">Normalized Token Stream (NLP Pipeline Output)</div>
+    </div>
+    <div class="processed-text-box">{{ prediction.processed }}</div>
+  </div>
+  {% endif %}
+
+  <!-- ACTIONS -->
+  <div class="result-actions">
+    <a href="{{ url_for('detect') }}" class="btn btn-primary btn-lg">Verify Another Article</a>
+    <a href="{{ url_for('evaluate') }}" class="btn btn-secondary btn-lg">View Model Benchmarks</a>
+  </div>
+
+</div>
+{% endblock %}

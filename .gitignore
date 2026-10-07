@@ -1,0 +1,28 @@
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Dataset files are downloaded locally and can be regenerated
+data/raw/*.csv
+data/processed/*.csv
+
+# Notebook and tooling output
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+
+# Local logs and editor files
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

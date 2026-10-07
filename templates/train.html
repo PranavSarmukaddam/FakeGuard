@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Train Model - FakeGuard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-breadcrumb">
+      <a href="{{ url_for('home') }}">Home</a> &rsaquo; <span>Train Model</span>
+    </div>
+    <h1 class="page-title">Train Machine Learning Models</h1>
+    <p class="page-subtitle">
+      Run the ML training pipeline: preprocessing, TF-IDF vectorization, and classifier comparison.
+    </p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="train-layout">
+
+    <!-- FORM -->
+    <div class="train-form-wrap">
+      <h2>Start Training</h2>
+
+      {% if not ran %}
+      <p>This will run <code>src/train_model.py</code> which performs the following steps:</p>
+      <ol class="train-steps-list">
+        <li>Load dataset from <code>data/raw/Fake.csv</code> and <code>True.csv</code> (or built-in sample data if not found)</li>
+        <li>Preprocess all articles: cleaning, tokenization, stop-word removal, lemmatization</li>
+        <li>Build TF-IDF feature vectors with bigram support</li>
+        <li>Split data into 80% training and 20% test sets</li>
+        <li>Train Logistic Regression, Naive Bayes and Linear SVM classifiers</li>
+        <li>Evaluate all models and select best by F1-score</li>
+        <li>Save vectorizer, model, corpus matrix and evaluation JSON to models/</li>
+      </ol>
+
+      <div class="train-note">
+        <strong>For best results:</strong> Download
+        <a href="https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset" target="_blank">
+          Fake.csv and True.csv from Kaggle
+        </a>
+        and place them in <code>data/raw/</code> before training.
+        Without them, the built-in sample dataset (32 articles) will be used automatically.
+        You can also run <code>python src/download_dataset.py</code> to attempt auto-download.
+      </div>
+
+      <form method="POST" id="trainForm">
+        <button type="submit" class="btn btn-primary btn-lg" id="trainBtn">
+          <span id="trainBtnText">Start Training</span>
+          <span id="trainBtnLoader" class="hidden">
+            <span class="spinner"></span> Training... (may take a few minutes)
+          </span>
+        </button>
+      </form>
+
+      {% elif success %}
+      <div class="train-success">
+        <span class="status-icon">Done</span>
+        <h3>Training Complete</h3>
+        <p>Models have been saved successfully. You can now analyze articles.</p>
+        <div class="train-actions">
+          <a href="{{ url_for('detect') }}" class="btn btn-primary">Detect News</a>
+          <a href="{{ url_for('evaluate') }}" class="btn btn-outline">View Metrics</a>
+        </div>
+      </div>
+      {% if stdout %}
+      <details class="train-log">
+        <summary>Training Log</summary>
+        <pre>{{ stdout }}</pre>
+      </details>
+      {% endif %}
+
+      {% else %}
+      <div class="train-error">
+        <span class="status-icon">Error</span>
+        <h3>Training Failed</h3>
+        <p>An error occurred during training. Check the log below and try again.</p>
+        <a href="{{ url_for('train_route') }}" class="btn btn-primary">Retry</a>
+      </div>
+      {% if stderr %}
+      <details class="train-log train-log-error" open>
+        <summary>Error Log</summary>
+        <pre>{{ stderr }}</pre>
+      </details>
+      {% endif %}
+      {% if stdout %}
+      <details class="train-log">
+        <summary>Output Log</summary>
+        <pre>{{ stdout }}</pre>
+      </details>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="train-sidebar">
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Dataset Options</div>
+        <div class="dataset-option">
+          <span class="ds-badge ds-recommended">Recommended</span>
+          <strong>Kaggle ISOT Dataset</strong>
+          <p>Approx. 44,000 articles. Place Fake.csv and True.csv in data/raw/ directory.</p>
+          <a href="https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset" class="btn btn-sm btn-outline" target="_blank">Download from Kaggle</a>
+        </div>
+        <div class="divider"></div>
+        <div class="dataset-option">
+          <span class="ds-badge ds-fallback">Auto-Download</span>
+          <strong>Auto Download Script</strong>
+          <p>Run the download script to attempt fetching a dataset from public sources automatically.</p>
+          <div class="code-block"><code>python src/download_dataset.py</code></div>
+        </div>
+        <div class="divider"></div>
+        <div class="dataset-option">
+          <span class="ds-badge" style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;">Fallback</span>
+          <strong>Built-in Sample Dataset</strong>
+          <p>32 articles (16 fake + 16 real). Used automatically when no CSV files are found. For demo purposes only.</p>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">CLI Alternative</div>
+        <p style="font-size:0.82rem;color:#3d5068;margin-bottom:0.5rem;">You can also run training from the command line:</p>
+        <div class="code-block"><code>cd fake-news-ir<br>python src/download_dataset.py<br>python src/train_model.py</code></div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var trainForm = document.getElementById('trainForm');
+if (trainForm) {
+  trainForm.addEventListener('submit', function () {
+    document.getElementById('trainBtnText').classList.add('hidden');
+    document.getElementById('trainBtnLoader').classList.remove('hidden');
+    document.getElementById('trainBtn').disabled = true;
+  });
+}
+</script>
+{% endblock %}

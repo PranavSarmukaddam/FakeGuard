@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Verify News Article | FakeGuard{% endblock %}
+{% block meta_desc %}Submit a news article for multi-classifier verification, linguistic feature extraction, and reference matching.{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-breadcrumb">
+      <a href="{{ url_for('home') }}">Home</a> &rsaquo; <span>Verify News</span>
+    </div>
+    <h1 class="page-title">News Verification Terminal</h1>
+    <p class="page-subtitle">
+      Input a news headline and article excerpt. The system extracts NLP linguistic features, passes text through the calibrated model, and matches related reporting across the reference corpus.
+    </p>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 1.5rem; padding-bottom: 3.5rem;">
+  <div class="detect-layout">
+
+    <!-- FORM -->
+    <div class="detect-form-wrap">
+      <form id="detectForm" method="POST" action="{{ url_for('detect') }}" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="headline">
+            Article Headline or Title
+            <span class="form-hint">Headline / Subject statement</span>
+          </label>
+          <input
+            type="text"
+            id="headline"
+            name="headline"
+            class="form-input"
+            placeholder="e.g. Breaking: Space telescope observes molecular signatures in distant atmosphere"
+            value="{{ headline or '' }}"
+            maxlength="500"
+          />
+          <div class="char-counter" id="headlineCounter">0 / 500</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="body">
+            Article Body Text
+            <span class="form-hint">Full article text or multiple paragraphs</span>
+          </label>
+          <textarea
+            id="body"
+            name="body"
+            class="form-textarea"
+            placeholder="Paste the reporting text, excerpts, or full story here for multi-classifier cross-examination..."
+            rows="10"
+            maxlength="10000"
+          >{{ body or '' }}</textarea>
+          <div class="char-counter" id="bodyCounter">0 / 10000</div>
+        </div>
+
+        <div class="sample-buttons">
+          <span class="sample-label">Benchmark Samples:</span>
+          <button type="button" class="btn-sample btn-sample-fake" id="loadFake">Load Deceptive Claim</button>
+          <button type="button" class="btn-sample btn-sample-real" id="loadReal">Load Verified Report</button>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg btn-full"
+            id="submitBtn"
+          >
+            <span id="btnText">Run Authenticity Analysis</span>
+            <span id="btnLoader" class="hidden">
+              <span class="spinner"></span> Processing NLP Pipeline &amp; Similarity...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="detect-sidebar">
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Verification Workflow</div>
+        <ol class="pipeline-list">
+          <li>Text Normalization &amp; Tokenization</li>
+          <li>Stop-word Filtering &amp; Lemmatization</li>
+          <li>TF-IDF Feature Space Projection (28k+ dims)</li>
+          <li>Calibrated Classifier Scoring</li>
+          <li>Cosine Similarity Ranking (Top 5 matches)</li>
+        </ol>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Active Models</div>
+        <ul class="classifier-list">
+          <li><span class="clf-dot clf-svm"></span> Calibrated Linear SVM (Primary)</li>
+          <li><span class="clf-dot clf-nb"></span> Multinomial Naive Bayes</li>
+          <li><span class="clf-dot clf-lr"></span> Logistic Regression</li>
+        </ul>
+        <p class="sidebar-note">Ensemble baseline validated on FakeNewsNet corpus.</p>
+      </div>
+
+      <div class="sidebar-card sidebar-disclaimer">
+        <div class="sidebar-card-title">Usage Advisory</div>
+        <p>
+          Automated classification models assess linguistic structures and similarity to known reporting. They do not replace primary investigative research or official press releases.
+        </p>
+      </div>
+
+    </aside>
+  </div>
+</div>
+
+<!-- SAMPLE DATA (hidden templates) -->
+<template id="fakeSampleHeadline">SHOCKING: Leaked documents prove government modified weather patterns</template>
+<template id="fakeSampleBody">Sources inside Washington claim officials have been modifying weather for decades using secret HAARP technology to harm citizens. Leaked documents prove senior officials approved secret weather manipulation programs. Multiple insiders, speaking on condition of anonymity, revealed that scientists who tried to expose the conspiracy were silenced by intelligence operatives.</template>
+
+<template id="realSampleHeadline">Federal Reserve raises benchmark interest rate by 25 basis points</template>
+<template id="realSampleBody">The Federal Reserve on Wednesday raised its benchmark federal-funds rate by a quarter percentage point as it continues its effort to bring inflation down toward the central bank 2 percent target. The decision was unanimous among voting members of the Federal Open Market Committee. Officials noted that labor markets remain resilient while economic activity expanded at a modest pace.</template>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function updateCounter(inputId, counterId, max) {
+    const el = document.getElementById(inputId);
+    const counter = document.getElementById(counterId);
+    if (!el || !counter) return;
+    const update = () => {
+      counter.textContent = el.value.length + ' / ' + max;
+      counter.style.color = el.value.length > max * 0.9 ? '#c0392b' : '';
+    };
+    el.addEventListener('input', update);
+    update();
+  }
+  updateCounter('headline', 'headlineCounter', 500);
+  updateCounter('body', 'bodyCounter', 10000);
+
+  document.getElementById('loadFake').addEventListener('click', function () {
+    document.getElementById('headline').value = document.getElementById('fakeSampleHeadline').innerHTML;
+    document.getElementById('body').value = document.getElementById('fakeSampleBody').innerHTML;
+    document.getElementById('headline').dispatchEvent(new Event('input'));
+    document.getElementById('body').dispatchEvent(new Event('input'));
+  });
+
+  document.getElementById('loadReal').addEventListener('click', function () {
+    document.getElementById('headline').value = document.getElementById('realSampleHeadline').innerHTML;
+    document.getElementById('body').value = document.getElementById('realSampleBody').innerHTML;
+    document.getElementById('headline').dispatchEvent(new Event('input'));
+    document.getElementById('body').dispatchEvent(new Event('input'));
+  });
+
+  document.getElementById('detectForm').addEventListener('submit', function () {
+    document.getElementById('btnText').classList.add('hidden');
+    document.getElementById('btnLoader').classList.remove('hidden');
+    document.getElementById('submitBtn').disabled = true;
+  });
+</script>
+{% endblock %}

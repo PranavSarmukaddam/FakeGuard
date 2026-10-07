@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Model Evaluation and Performance Benchmarks | FakeGuard{% endblock %}
+{% block meta_desc %}Accuracy, Precision, Recall, F1-score and Confusion Matrix comparison for trained classifiers on the FakeNewsNet corpus.{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="page-breadcrumb">
+      <a href="{{ url_for('home') }}">Home</a> &rsaquo; <span>Model Evaluation</span>
+    </div>
+    <h1 class="page-title">Classification Engine Benchmarks</h1>
+    <p class="page-subtitle">
+      Comparative empirical evaluation across Logistic Regression, Multinomial Naive Bayes, and Linear Support Vector Machines on the verified corpus test set.
+    </p>
+  </div>
+</div>
+
+<div class="container" style="padding-top: 2rem; padding-bottom: 3.5rem;">
+
+  {% if no_data %}
+  <div class="no-data-card">
+    <h2>Models Not Initialized</h2>
+    <p>Run the training pipeline to generate evaluation benchmarks.</p>
+    <a href="{{ url_for('train_route') }}" class="btn btn-primary">Train Models</a>
+  </div>
+  {% else %}
+
+  <!-- SUMMARY BAR (TRAINED AT REMOVED AS REQUESTED) -->
+  <div class="eval-summary-bar">
+    <div class="eval-sum-item">
+      <div class="eval-sum-label">Production Model</div>
+      <div class="eval-sum-val accent">{{ best_model }}</div>
+    </div>
+    <div class="eval-sum-item">
+      <div class="eval-sum-label">Test Set Accuracy</div>
+      <div class="eval-sum-val">{{ "%.2f"|format(summary.best_accuracy * 100) }}%</div>
+    </div>
+    <div class="eval-sum-item">
+      <div class="eval-sum-label">Balanced F1-Score</div>
+      <div class="eval-sum-val">{{ "%.4f"|format(summary.best_f1) }}</div>
+    </div>
+    <div class="eval-sum-item">
+      <div class="eval-sum-label">Indexed Corpus Size</div>
+      <div class="eval-sum-val">1,595 Articles</div>
+    </div>
+  </div>
+
+  <!-- METRICS TABLE -->
+  <div class="eval-card">
+    <div class="eval-card-header">
+      <div class="eval-card-title">Model Comparative Matrix</div>
+      <span class="table-tag">Test Split: 20% Stratified (585 samples)</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="eval-table">
+        <thead>
+          <tr>
+            <th>Classifier Algorithm</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>Latency</th>
+            <th>Deployment Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in metrics_rows %}
+          <tr class="{% if row.is_best %}row-best{% endif %}">
+            <td class="model-cell">
+              {% if row.is_best %}
+                <span class="active-badge">Active</span>
+              {% endif %}
+              <strong>{{ row.model }}</strong>
+            </td>
+            <td>
+              <div class="acc-val">{{ row.accuracy }}</div>
+              <div class="mini-bar-track">
+                <div class="mini-bar" style="width: {{ (row.accuracy | float * 100)|round(1) }}%"></div>
+              </div>
+            </td>
+            <td>{{ row.precision }}</td>
+            <td>{{ row.recall }}</td>
+            <td><strong class="highlight-metric">{{ row.f1_score }}</strong></td>
+            <td>{{ row.training_time }}s</td>
+            <td>
+              {% if row.is_best %}
+                <span class="badge-saved">Selected for Inference</span>
+              {% else %}
+                <span class="badge-compared">Benchmarked</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BAR CHART -->
+  <div class="eval-card">
+    <div class="eval-card-header">
+      <div class="eval-card-title">Comparative Performance Breakdown</div>
+    </div>
+    <div class="chart-container">
+      <canvas id="metricsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- CONFUSION MATRICES -->
+  <div class="eval-card">
+    <div class="eval-card-header">
+      <div class="eval-card-title">Confusion Matrices & Error Distributions</div>
+      <span class="table-tag">True Positives vs False Alarms</span>
+    </div>
+    <div class="cm-grid" id="cmGrid"></div>
+  </div>
+
+  {% endif %}
+
+  <!-- PREPROCESSING PIPELINE -->
+  <div class="eval-card">
+    <div class="eval-card-header">
+      <div class="eval-card-title">Text Preprocessing & Normalization Pipeline</div>
+    </div>
+    <div class="pipeline-steps-list">
+      {% for step in pipeline_info.steps %}
+      <div class="pipeline-step-item">
+        <span class="step-num">{{ loop.index }}</span>
+        <span>{{ step }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="pipeline-stats">
+      <div class="pstat-item"><strong>Vocabulary Size:</strong> 28,463 n-grams</div>
+      <div class="pstat-item"><strong>Stop Words Filter:</strong> NLTK Standard English</div>
+      <div class="pstat-item"><strong>Stemmer / Lemmatizer:</strong> WordNet Lemmatizer</div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if not no_data %}
+<script>
+const cmRaw = {{ cm_data | safe }};
+
+// Bar Chart
+const ctx = document.getElementById('metricsChart').getContext('2d');
+const labels = cmRaw.map(d => d.model_name);
+const datasets = [
+  { label: 'Accuracy',  data: cmRaw.map(d => (d.accuracy  * 100).toFixed(2)), backgroundColor: '#2563ebcc', borderColor: '#2563eb', borderWidth: 1.5, borderRadius: 4 },
+  { label: 'Precision', data: cmRaw.map(d => (d.precision * 100).toFixed(2)), backgroundColor: '#0d9488cc', borderColor: '#0d9488', borderWidth: 1.5, borderRadius: 4 },
+  { label: 'Recall',    data: cmRaw.map(d => (d.recall    * 100).toFixed(2)), backgroundColor: '#d97706cc', borderColor: '#d97706', borderWidth: 1.5, borderRadius: 4 },
+  { label: 'F1-Score',  data: cmRaw.map(d => (d.f1_score  * 100).toFixed(2)), backgroundColor: '#4f46e5cc', borderColor: '#4f46e5', borderWidth: 1.5, borderRadius: 4 },
+];
+new Chart(ctx, {
+  type: 'bar',
+  data: { labels, datasets },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#334155', font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' } } },
+      tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + c.raw + '%' } },
+    },
+    scales: {
+      x: { ticks: { color: '#64748b', font: { family: 'Plus Jakarta Sans' } }, grid: { color: '#f1f5f9' } },
+      y: { ticks: { color: '#64748b', callback: v => v + '%' }, grid: { color: '#f1f5f9' }, min: 50, max: 100 }
+    }
+  }
+});
+
+// Confusion Matrices
+const grid = document.getElementById('cmGrid');
+cmRaw.forEach(function(d) {
+  const tn = d.matrix[0][0], fp = d.matrix[0][1];
+  const fn = d.matrix[1][0], tp = d.matrix[1][1];
+  const total = tn + fp + fn + tp;
+  function pct(v) { return total ? (v / total * 100).toFixed(1) : '0.0'; }
+
+  const card = document.createElement('div');
+  card.className = 'cm-card';
+  card.innerHTML =
+    '<div class="cm-model-title">' + d.model_name + '</div>' +
+    '<div class="cm-col-labels"><span></span><span>Predicted REAL</span><span>Predicted FAKE</span></div>' +
+    '<div class="cm-matrix-grid">' +
+      '<div class="cm-row-label">Actual REAL</div>' +
+      '<div class="cm-cell cm-tn"><div class="cm-cell-label">TN</div><div class="cm-cell-val">' + tn + '</div><div class="cm-cell-pct">' + pct(tn) + '%</div></div>' +
+      '<div class="cm-cell cm-fp"><div class="cm-cell-label">FP</div><div class="cm-cell-val">' + fp + '</div><div class="cm-cell-pct">' + pct(fp) + '%</div></div>' +
+      '<div class="cm-row-label">Actual FAKE</div>' +
+      '<div class="cm-cell cm-fn"><div class="cm-cell-label">FN</div><div class="cm-cell-val">' + fn + '</div><div class="cm-cell-pct">' + pct(fn) + '%</div></div>' +
+      '<div class="cm-cell cm-tp"><div class="cm-cell-label">TP</div><div class="cm-cell-val">' + tp + '</div><div class="cm-cell-pct">' + pct(tp) + '%</div></div>' +
+    '</div>' +
+    '<div class="cm-metrics-bottom">' +
+      '<span>Acc: ' + (d.accuracy*100).toFixed(1) + '%</span>' +
+      '<span>Prec: ' + (d.precision*100).toFixed(1) + '%</span>' +
+      '<span>Rec: ' + (d.recall*100).toFixed(1) + '%</span>' +
+      '<span>F1: ' + d.f1_score.toFixed(4) + '</span>' +
+    '</div>';
+  grid.appendChild(card);
+});
+</script>
+{% endif %}
+{% endblock %}
